@@ -1,0 +1,15 @@
+# Hugo build folder
+/public/
+/resources/
+
+# Hugo cache
+hugo_stats.json
+
+# macOS system files
+.DS_Store
+
+# Node dependencies (if used for JS/CSS)
+node_modules/
+
+# VS Code settings (optional)
+.vscode/
