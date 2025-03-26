@@ -1,13 +1,13 @@
 +++
 # type = "docs"
-title = "My Devops Blog Start"
+title = "Jason Devops Blog Start"
 date = 2025-03-26T01:12:11+08:00
 # description = "" # Used by description meta tag, summary will be used instead if not set or empty.
 featured = false
 draft = false
 comment = true
 toc = true
-pinned = false
+pinned = true
 carousel = false
 categories = []
 tags = ["DevOps", "Blog", "Hugo", "寫作練習"]
@@ -16,8 +16,7 @@ images = []
 #[funding]
 +++
 
-Summary.
-
+為什麼我要做這件事？
 <!--more-->
 
 # 為什麼我要做這件事？

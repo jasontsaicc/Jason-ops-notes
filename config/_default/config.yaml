@@ -1,6 +1,6 @@
 baseURL: https://hbs-skeleton.netlify.app/
-title: Hugo Bootstrap Skeleton
-copyright: 'Copyright © 2016-{year} Razon Yang. All Rights Reserved.'
+title: JasonOps Blog
+copyright: 'Copyright © 2016-{year} Jason Tsai. All Rights Reserved.'
 defaultContentLanguage: en
 # hasCJKLanguage: true # Uncomment it if your content contains Chinese/Japanese/Korean Languages.
 # defaultContentLanguageInSubdir: true
