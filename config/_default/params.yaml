@@ -16,10 +16,10 @@ keywords: DevOps, Hugo, Blog, JasonOps
 # metaRobots:  # disable Meta Tag robots
 
 # logo: images/logo.webp # Logo image. Default to images/logo.webp.
-# logo: true # Disable Logo
+logo: false # Disable Logo
 brand: JasonOps
 
-palette: blue-gray # Default palette. Optional. You'll need to clear the browser cache after modifying this.
+palette: red # Default palette. Optional. You'll need to clear the browser cache after modifying this.
 # Available palettes. Default to ALL. Empty array means disable.
 # palettes:
 #  - blue
@@ -308,7 +308,7 @@ social:
 
 author:
   name: Jason Tsai
-  avatar: static/profile.webp # Avatar image. Default to "images/profile.webp".
+  avatar: static/me.webp # Avatar image. Default to "images/profile.webp".
   bio: 'System Engineer, DevOps Engineer, Cloud Architect' # Author bio.
   company: <a href="https://www.ecloudvalley.com/" target="_blank" rel="noopener noreferrer">eCloudvalley</a> # HTML markup are supported, such as: <a href="https://example.com" target="_blank" rel="noopener noreferrer">Company</a>.
   location: <a href='https://www.openstreetmap.org/search?query=Taipei'>Taiwan</a> # HTML markup are supported, such as: <a href='https://www.openstreetmap.org/search?query=Earth'>Earth</a>.
@@ -320,6 +320,7 @@ author:
   social:
     email: jason.tsaicc@gmail.com
     github: jasontsaicc
+    linkedin: jason-tsai-cc
     # twitter: razonyang
     # patreon: razonyang
     # paypal: razonyang
