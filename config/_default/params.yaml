@@ -4,6 +4,7 @@ mainSections:
   # - blog
   - posts
   # - news
+  - growth
 
 # titleSeparator: '|' # Title separator. Default to -.
 
@@ -308,7 +309,7 @@ social:
 
 author:
   name: Jason Tsai
-  avatar: static/me.webp # Avatar image. Default to "images/profile.webp".
+  avatar: static/images/me.webp # Avatar image. Default to "images/profile.webp".
   bio: 'System Engineer, DevOps Engineer, Cloud Architect' # Author bio.
   company: <a href="https://www.ecloudvalley.com/" target="_blank" rel="noopener noreferrer">eCloudvalley</a> # HTML markup are supported, such as: <a href="https://example.com" target="_blank" rel="noopener noreferrer">Company</a>.
   location: <a href='https://www.openstreetmap.org/search?query=Taipei'>Taiwan</a> # HTML markup are supported, such as: <a href='https://www.openstreetmap.org/search?query=Earth'>Earth</a>.
