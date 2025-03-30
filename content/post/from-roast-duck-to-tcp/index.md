@@ -1,7 +1,16 @@
 ---
 title: 從吃烤鴨聊到 TCP：重新回顧網路通訊與加密的基本原理
+description: 
 date: 2025-03-30
-tags: [networking, tcp, udp, encryption, devops]
+image: cover.jpg
+categories: 
+    - DevOps
+tags:
+    - networking
+    - tcp
+    - encryption
+    - devops
+weight: 1
 ---
 
 ## 第二篇文章獻給 Andrew 和球魚
