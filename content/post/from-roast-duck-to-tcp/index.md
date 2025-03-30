@@ -13,7 +13,7 @@ tags:
 weight: 1
 ---
 
-## 第二篇文章獻給 Andrew 和球魚
+## 第二篇文章獻給 Andrew 和球魚啦!
 
 工程師的聚會除了在罵 DGR、佛地魔之外，這次竟然從吃烤鴨聊到 x86、Apple II、DOS、macOS、iOS 的歷史，一路延伸到網景、Sun Microsystems。
 

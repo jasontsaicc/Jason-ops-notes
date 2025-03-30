@@ -18,7 +18,7 @@ Built with [Hugo](https://gohugo.io/) and the [Stack theme](https://github.com/C
 - GitHub: [jasontsaicc](https://github.com/jasontsaicc)
 - LinkedIn: [linkedin.com/in/jasontsaicc](https://www.linkedin.com/in/jason-tsai-cc/)
 - Email: jasontsaicc@gmail.com
-
+- Blog : https://jasontsaicc.github.io/Jason-ops-notes/
 ## 🚀 Local Development
 
 ```bash
