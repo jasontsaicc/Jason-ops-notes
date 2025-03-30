@@ -2,7 +2,7 @@
 title: 從吃烤鴨聊到 TCP：重新回顧網路通訊與加密的基本原理
 description: 
 date: 2025-03-30
-image: cover.jpg
+image: cover2.jpg
 categories: 
     - DevOps
 tags:
