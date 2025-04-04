@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Jason Ops Notes</title><link>https://jasontsaicc.github.io/Jason-ops-notes/</link><description>Recent content on Jason Ops Notes</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Thu, 03 Apr 2025 12:13:00 +0800</lastBuildDate><atom:link href="https://jasontsaicc.github.io/Jason-ops-notes/index.xml" rel="self" type="application/rss+xml"/><item><title>輸入網址之後發生的事?, DNS, TLS, 以及Certificate</title><link>https://jasontsaicc.github.io/Jason-ops-notes/p/%E8%BC%B8%E5%85%A5%E7%B6%B2%E5%9D%80%E4%B9%8B%E5%BE%8C%E7%99%BC%E7%94%9F%E7%9A%84%E4%BA%8B-dns-tls-%E4%BB%A5%E5%8F%8Acertificate/</link><pubDate>Thu, 03 Apr 2025 12:13:00 +0800</pubDate><guid>https://jasontsaicc.github.io/Jason-ops-notes/p/%E8%BC%B8%E5%85%A5%E7%B6%B2%E5%9D%80%E4%B9%8B%E5%BE%8C%E7%99%BC%E7%94%9F%E7%9A%84%E4%BA%8B-dns-tls-%E4%BB%A5%E5%8F%8Acertificate/</guid><description>&lt;img src="https://jasontsaicc.github.io/Jason-ops-notes/p/%E8%BC%B8%E5%85%A5%E7%B6%B2%E5%9D%80%E4%B9%8B%E5%BE%8C%E7%99%BC%E7%94%9F%E7%9A%84%E4%BA%8B-dns-tls-%E4%BB%A5%E5%8F%8Acertificate/blog_cover_03.jpeg" alt="Featured image of post 輸入網址之後發生的事?, DNS, TLS, 以及Certificate" />&lt;p>上一篇聊到了 TCP/UDP, 和非對稱加密/對稱加密的基本觀念, 再來繼續聊建立建立通訊之後之後的事!!
+這也是我在準備AWS Cloud Support Engineer面試題, 重新整理思路釐清整體概念的, 我們先從網路層面說起&lt;/p>
+&lt;hr>
+&lt;h2 id="輸入網址之後發生的事">輸入網址之後發生的事
+&lt;/h2>&lt;p>有沒有想過, 在使用Browser輸入&lt;code>google.com&lt;/code>按下 Enter, 之後發生了什麼事? 瀏覽器是怎麼將網頁顯示在你的螢幕上的!&lt;/p>
+&lt;p>按下Enter之後, 首先會先去DNS server(一般是UDP 53port, 但會先查看本機的cache) 查詢到google.com 的IP是多少.&lt;/p>
+&lt;p>這裡我們使用dig指令 來查看DNS server 的資訊(另外也可以使用nslookup來查詢, 但是現在新的工具建議使用dig比較清楚)&lt;/p>
+&lt;p>&lt;img src="https://jasontsaicc.github.io/Jason-ops-notes/p/%E8%BC%B8%E5%85%A5%E7%B6%B2%E5%9D%80%E4%B9%8B%E5%BE%8C%E7%99%BC%E7%94%9F%E7%9A%84%E4%BA%8B-dns-tls-%E4%BB%A5%E5%8F%8Acertificate/image-1.png"
+width="1564"
+height="818"
+srcset="https://jasontsaicc.github.io/Jason-ops-notes/p/%E8%BC%B8%E5%85%A5%E7%B6%B2%E5%9D%80%E4%B9%8B%E5%BE%8C%E7%99%BC%E7%94%9F%E7%9A%84%E4%BA%8B-dns-tls-%E4%BB%A5%E5%8F%8Acertificate/image-1_hu_7efda49876f79e7b.png 480w, https://jasontsaicc.github.io/Jason-ops-notes/p/%E8%BC%B8%E5%85%A5%E7%B6%B2%E5%9D%80%E4%B9%8B%E5%BE%8C%E7%99%BC%E7%94%9F%E7%9A%84%E4%BA%8B-dns-tls-%E4%BB%A5%E5%8F%8Acertificate/image-1_hu_7b005ea76a294917.png 1024w"
+loading="lazy"
+alt="linux dig指令"
+class="gallery-image"
+data-flex-grow="191"
+data-flex-basis="458px"
+>&lt;/p>
+&lt;ul>
+&lt;li>status: NOERROR 代表沒有錯誤&lt;/li>
+&lt;li>QUESTION SECTION 我們查詢的是google的A記錄&lt;/li>
+&lt;li>Google.com 對應的 IP是 142.250.196.206&lt;/li>
+&lt;/ul>
+&lt;h3 id="https-與-tls">HTTPS 與 TLS
+&lt;/h3>&lt;p>當瀏覽器拿到 IP 後, 這時候看到網址是「https://」開頭就其實背後就是使用SSL/TLS加密,會觸發 TLS Handshake, 這時候SSL/TLS做了2件事,&lt;/p>
+&lt;ol>
+&lt;li>使用加密可以確保傳輸的內容不會被竊聽&lt;/li>
+&lt;li>驗證伺服器身分（確認你連的是真的 Google，而不是假網站）&lt;/li>
+&lt;/ol>
+&lt;h3 id="tls-handshake的流程">TLS Handshake的流程
+&lt;/h3>&lt;p>當連到 https:// 開頭的網站時，背後其實跑的流程：&lt;/p>
+&lt;ol>
+&lt;li>Client 發送 Hello 告訴Server 我支援哪些加密演算法, TLS 版本?&lt;/li>
+&lt;li>Server 回傳 Hello 跟Certificate（網站名稱, 憑證, 公鑰）&lt;/li>
+&lt;li>瀏覽器會檢查憑證是否有效 (有沒有過期, 是不是有效的CA發的, 主機名)&lt;/li>
+&lt;li>如果沒問題, 瀏覽器用公鑰加密Session Key送給 Server&lt;/li>
+&lt;li>Server 用私鑰解開 Session Key，之後用這把金鑰雙方加密傳輸&lt;/li>
+&lt;/ol>
+&lt;p>為什麼安全呢?&lt;/p>
+&lt;ul>
+&lt;li>公鑰加密是「一把鎖 → 人人可鎖，只能你自己能解」的概念&lt;/li>
+&lt;li>就算中間有人攔截，也無法解出 Session Key&lt;/li>
+&lt;/ul>
+&lt;p>這也是上一篇說到的 混合加密（RSA + AES）。&lt;/p>
+&lt;blockquote>
+&lt;p>非對稱加密建立信任 + 對稱加密負責傳輸
+因為對稱加密速度快，適合長時間大量傳輸，而非對稱加密雖安全但運算慢，適合只用在「傳送 session key」。&lt;/p>&lt;/blockquote>
+&lt;p>這裡使用openssl來查看 TLS 連線過程：
+openssl s_client -connect google.com:443 -servername google.com -msg
+&lt;img src="https://jasontsaicc.github.io/Jason-ops-notes/p/%E8%BC%B8%E5%85%A5%E7%B6%B2%E5%9D%80%E4%B9%8B%E5%BE%8C%E7%99%BC%E7%94%9F%E7%9A%84%E4%BA%8B-dns-tls-%E4%BB%A5%E5%8F%8Acertificate/image-3.png"
+width="1450"
+height="1152"
+srcset="https://jasontsaicc.github.io/Jason-ops-notes/p/%E8%BC%B8%E5%85%A5%E7%B6%B2%E5%9D%80%E4%B9%8B%E5%BE%8C%E7%99%BC%E7%94%9F%E7%9A%84%E4%BA%8B-dns-tls-%E4%BB%A5%E5%8F%8Acertificate/image-3_hu_3b295f44ed21ab64.png 480w, https://jasontsaicc.github.io/Jason-ops-notes/p/%E8%BC%B8%E5%85%A5%E7%B6%B2%E5%9D%80%E4%B9%8B%E5%BE%8C%E7%99%BC%E7%94%9F%E7%9A%84%E4%BA%8B-dns-tls-%E4%BB%A5%E5%8F%8Acertificate/image-3_hu_598c4b4999612569.png 1024w"
+loading="lazy"
+alt="TLS 連線過程-1"
+class="gallery-image"
+data-flex-grow="125"
+data-flex-basis="302px"
+>
+&lt;img src="https://jasontsaicc.github.io/Jason-ops-notes/p/%E8%BC%B8%E5%85%A5%E7%B6%B2%E5%9D%80%E4%B9%8B%E5%BE%8C%E7%99%BC%E7%94%9F%E7%9A%84%E4%BA%8B-dns-tls-%E4%BB%A5%E5%8F%8Acertificate/image-4.png"
+width="1538"
+height="1768"
+srcset="https://jasontsaicc.github.io/Jason-ops-notes/p/%E8%BC%B8%E5%85%A5%E7%B6%B2%E5%9D%80%E4%B9%8B%E5%BE%8C%E7%99%BC%E7%94%9F%E7%9A%84%E4%BA%8B-dns-tls-%E4%BB%A5%E5%8F%8Acertificate/image-4_hu_5488d8842d8b912c.png 480w, https://jasontsaicc.github.io/Jason-ops-notes/p/%E8%BC%B8%E5%85%A5%E7%B6%B2%E5%9D%80%E4%B9%8B%E5%BE%8C%E7%99%BC%E7%94%9F%E7%9A%84%E4%BA%8B-dns-tls-%E4%BB%A5%E5%8F%8Acertificate/image-4_hu_921c0932f5cdd238.png 1024w"
+loading="lazy"
+alt="TLS 連線過程-2"
+class="gallery-image"
+data-flex-grow="86"
+data-flex-basis="208px"
+>&lt;/p>
+&lt;ul>
+&lt;li>Client Hello → 支援哪些加密演算法、TLS 版本&lt;/li>
+&lt;li>Server Hello → 協議、Cipher、憑證內容&lt;/li>
+&lt;/ul>
+&lt;p>這裡有一個重點是怎麼確定你連到的真的Google呢?怎麼去驗證呢?&lt;/p>
+&lt;h2 id="certificate的運作">Certificate的運作
+&lt;/h2>&lt;p>Certificate用來當作網頁的身份證, 上面寫了&lt;/p>
+&lt;ul>
+&lt;li>網站名稱(google.com)&lt;/li>
+&lt;li>和上一篇說到的公鑰（用來給瀏覽器加密 Session Key, 單向的加密)&lt;/li>
+&lt;li>以及是誰背書的簽發者, (CA, Certificate Authority)? 這個清單上存在我們的瀏覽器中!&lt;/li>
+&lt;li>有效期限&lt;/li>
+&lt;li>簽章 CA 使用自己的key來加簽, 確定憑證沒有被篡改&lt;/li>
+&lt;/ul>
+&lt;p>有點像要進去公司大樓, 我拿員工證(Certificate)給管理員(Browser)看, 看到誰google發給我的員工證,這樣我就可以進去了（建立 HTTPS連線）.&lt;/p>
+&lt;p>瀏覽器內建會信任這些 CA 發的憑證, 所以我們的系統跟瀏覽器喔都有預設信任的CA清單, 都預設在系統當中了, 這幾個CA裡面的清單會自動更新來收錄新網站&lt;/p>
+&lt;ul>
+&lt;li>所以瀏覽器信 CA → 信這張憑證 → 信這個網站。&lt;/li>
+&lt;li>只要是可信 CA 簽出來的憑證，瀏覽器就會信任&lt;/li>
+&lt;li>CA 是憑證頒發單位&lt;/li>
+&lt;/ul>
+&lt;p>可以在瀏覽器中查看 Google 的憑證內容, 有效期限, 還有公鑰
+&lt;img src="https://jasontsaicc.github.io/Jason-ops-notes/p/%E8%BC%B8%E5%85%A5%E7%B6%B2%E5%9D%80%E4%B9%8B%E5%BE%8C%E7%99%BC%E7%94%9F%E7%9A%84%E4%BA%8B-dns-tls-%E4%BB%A5%E5%8F%8Acertificate/image-5.png"
+width="2172"
+height="1644"
+srcset="https://jasontsaicc.github.io/Jason-ops-notes/p/%E8%BC%B8%E5%85%A5%E7%B6%B2%E5%9D%80%E4%B9%8B%E5%BE%8C%E7%99%BC%E7%94%9F%E7%9A%84%E4%BA%8B-dns-tls-%E4%BB%A5%E5%8F%8Acertificate/image-5_hu_16af0a25c29631f8.png 480w, https://jasontsaicc.github.io/Jason-ops-notes/p/%E8%BC%B8%E5%85%A5%E7%B6%B2%E5%9D%80%E4%B9%8B%E5%BE%8C%E7%99%BC%E7%94%9F%E7%9A%84%E4%BA%8B-dns-tls-%E4%BB%A5%E5%8F%8Acertificate/image-5_hu_8000511ff5ebd150.png 1024w"
+loading="lazy"
+alt="alt text"
+class="gallery-image"
+data-flex-grow="132"
+data-flex-basis="317px"
+>&lt;/p>
+&lt;p>這裡我來說一下憑證的簽發流程(self Signed常常會使用到, 以後在出一篇詳細說明)&lt;/p>
+&lt;p>一般的流程是這樣, 在server端 → 建立 CSR（憑證簽發請求） → 傳送給 CA → CA 用私鑰簽名 → 回傳憑證&lt;/p>
+&lt;p>用我最近找工作來舉例的話就是:我在104寫履歷（CSR），給我的推薦人（CA），幫我背書（簽名）說「Jason沒問題!」，我就可以拿著這張履歷（憑證）找工作（給瀏覽器驗證）。&lt;/p>
+&lt;h2 id="總結">總結
+&lt;/h2>&lt;p>寫著寫著發現有太多要延伸出去的, 不知不覺寫了很多, 原本想要講 JWT 和自簽憑證，但還沒來得及, 下篇再繼續分享！&lt;/p></description></item><item><title>從吃烤鴨聊到 TCP：重新回顧網路通訊與加密的基本原理</title><link>https://jasontsaicc.github.io/Jason-ops-notes/p/%E5%BE%9E%E5%90%83%E7%83%A4%E9%B4%A8%E8%81%8A%E5%88%B0-tcp%E9%87%8D%E6%96%B0%E5%9B%9E%E9%A1%A7%E7%B6%B2%E8%B7%AF%E9%80%9A%E8%A8%8A%E8%88%87%E5%8A%A0%E5%AF%86%E7%9A%84%E5%9F%BA%E6%9C%AC%E5%8E%9F%E7%90%86/</link><pubDate>Sun, 30 Mar 2025 00:00:00 +0000</pubDate><guid>https://jasontsaicc.github.io/Jason-ops-notes/p/%E5%BE%9E%E5%90%83%E7%83%A4%E9%B4%A8%E8%81%8A%E5%88%B0-tcp%E9%87%8D%E6%96%B0%E5%9B%9E%E9%A1%A7%E7%B6%B2%E8%B7%AF%E9%80%9A%E8%A8%8A%E8%88%87%E5%8A%A0%E5%AF%86%E7%9A%84%E5%9F%BA%E6%9C%AC%E5%8E%9F%E7%90%86/</guid><description>&lt;img src="https://jasontsaicc.github.io/Jason-ops-notes/p/%E5%BE%9E%E5%90%83%E7%83%A4%E9%B4%A8%E8%81%8A%E5%88%B0-tcp%E9%87%8D%E6%96%B0%E5%9B%9E%E9%A1%A7%E7%B6%B2%E8%B7%AF%E9%80%9A%E8%A8%8A%E8%88%87%E5%8A%A0%E5%AF%86%E7%9A%84%E5%9F%BA%E6%9C%AC%E5%8E%9F%E7%90%86/cover2.jpg" alt="Featured image of post 從吃烤鴨聊到 TCP：重新回顧網路通訊與加密的基本原理" />&lt;h2 id="第二篇文章獻給-andrew-和球魚啦">第二篇文章獻給 Andrew 和球魚啦!
+&lt;/h2>&lt;p>工程師的聚會除了在罵 DGR、佛地魔之外，這次竟然從吃烤鴨聊到 x86、Apple II、DOS、macOS、iOS 的歷史，一路延伸到網景、Sun Microsystems。&lt;/p>
+&lt;p>然後被 Andrew 一個靈魂拷問直接問到：&lt;/p>
+&lt;blockquote>
+&lt;p>OSI 架構是什麼？TCP/IP 怎麼運作？什麼是 3-way handshake、UDP、JWT？&lt;/p>&lt;/blockquote>
+&lt;p>這些都是面試必考題，不過不理解整個演進脈絡，每次都會變成「一看就會、一被問就廢」。&lt;/p>
+&lt;h2 id="就從tcp開始吧">就從TCP開始吧!!
+&lt;/h2>&lt;h2 id="故事起點兩台機器要怎麼溝通">故事起點：兩台機器要怎麼溝通？
+&lt;/h2>&lt;h3 id="udp像寄明信片">UDP：像寄明信片
+&lt;/h3>&lt;p>（想像一下哈利波特收到霍格華茲入學通知書）&lt;/p>
+&lt;p>完全沒有打招呼，資料就直接送出去，會導致：&lt;/p>
+&lt;ul>
+&lt;li>&lt;strong>不保證送達、順序也可能亂掉&lt;/strong>&lt;/li>
+&lt;li>適合：直播、語音、遊戲（掉一封信沒差，反正大量資料一直傳）&lt;/li>
+&lt;/ul>
+&lt;p>&lt;strong>優點&lt;/strong>：快、省資源&lt;br>
+&lt;strong>缺點&lt;/strong>：不可靠，資料可能遺失&lt;/p>
+&lt;hr>
+&lt;h3 id="tcp像打電話">TCP：像打電話
+&lt;/h3>&lt;p>TCP 建立連線前會先「打招呼」 → &lt;strong>三次握手（3-way handshake）&lt;/strong>&lt;/p>
+&lt;ol>
+&lt;li>Client：嘿，我要跟你講話（SYN）&lt;/li>
+&lt;li>Server：好啊，我準備好了（SYN+ACK）&lt;/li>
+&lt;li>Client：那我開始說囉（ACK）&lt;/li>
+&lt;/ol>
+&lt;p>就像你打給朋友，對方說「喂」，你回「嗨」→ 連線才算建立。&lt;/p>
+&lt;p>&lt;strong>優點&lt;/strong>：可靠、有順序、會補資料&lt;br>
+&lt;strong>缺點&lt;/strong>：多一步手續，速度比 UDP 慢&lt;/p>
+&lt;hr>
+&lt;h2 id="用工具觀察握手流程">用工具觀察握手流程
+&lt;/h2>&lt;p>可以用 &lt;code>tcpdump&lt;/code> 搭配 &lt;code>curl&lt;/code> 觀察完整流程：
+&lt;img src="https://jasontsaicc.github.io/Jason-ops-notes/p/%E5%BE%9E%E5%90%83%E7%83%A4%E9%B4%A8%E8%81%8A%E5%88%B0-tcp%E9%87%8D%E6%96%B0%E5%9B%9E%E9%A1%A7%E7%B6%B2%E8%B7%AF%E9%80%9A%E8%A8%8A%E8%88%87%E5%8A%A0%E5%AF%86%E7%9A%84%E5%9F%BA%E6%9C%AC%E5%8E%9F%E7%90%86/3-way_handshake.png"
+width="3082"
+height="878"
+srcset="https://jasontsaicc.github.io/Jason-ops-notes/p/%E5%BE%9E%E5%90%83%E7%83%A4%E9%B4%A8%E8%81%8A%E5%88%B0-tcp%E9%87%8D%E6%96%B0%E5%9B%9E%E9%A1%A7%E7%B6%B2%E8%B7%AF%E9%80%9A%E8%A8%8A%E8%88%87%E5%8A%A0%E5%AF%86%E7%9A%84%E5%9F%BA%E6%9C%AC%E5%8E%9F%E7%90%86/3-way_handshake_hu_d306a4140904a643.png 480w, https://jasontsaicc.github.io/Jason-ops-notes/p/%E5%BE%9E%E5%90%83%E7%83%A4%E9%B4%A8%E8%81%8A%E5%88%B0-tcp%E9%87%8D%E6%96%B0%E5%9B%9E%E9%A1%A7%E7%B6%B2%E8%B7%AF%E9%80%9A%E8%A8%8A%E8%88%87%E5%8A%A0%E5%AF%86%E7%9A%84%E5%9F%BA%E6%9C%AC%E5%8E%9F%E7%90%86/3-way_handshake_hu_ab8cab870ff3afd6.png 1024w"
+loading="lazy"
+alt="TCP 3-way handshake"
+class="gallery-image"
+data-flex-grow="351"
+data-flex-basis="842px"
+>&lt;/p>
+&lt;ol>
+&lt;li>Client → Server：&lt;strong>SYN&lt;/strong>
+&lt;ul>
+&lt;li>從本機（port 50963）發出 SYN 封包 → Google 443&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>Server → Client：&lt;strong>SYN-ACK&lt;/strong>
+&lt;ul>
+&lt;li>Google 回一個 SYN + ACK，acknowledge 你的序號&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>Client → Server：&lt;strong>ACK&lt;/strong>
+&lt;ul>
+&lt;li>回 ACK，握手完成，連線建立&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ol>
+&lt;hr>
+&lt;h3 id="封包標記簡單對照表">封包標記簡單對照表
+&lt;/h3>&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>Flag&lt;/th>
+&lt;th>意思&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>&lt;code>[S]&lt;/code>&lt;/td>
+&lt;td>SYN：我要建立連線&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;code>[S.]&lt;/code>&lt;/td>
+&lt;td>SYN+ACK：我也 OK，且回你&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;code>[.]&lt;/code>&lt;/td>
+&lt;td>ACK：確認完成握手&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;code>[P.]&lt;/code>&lt;/td>
+&lt;td>Push：開始傳資料&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;code>[F.]&lt;/code>&lt;/td>
+&lt;td>FIN：我要斷線結束連線&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;hr>
+&lt;h2 id="資料會被偷怎麼辦">資料會被偷怎麼辦？
+&lt;/h2>&lt;p>建立溝通管道後，下一步要擔心資料被竊聽，這時就需要 &lt;strong>加密&lt;/strong>。&lt;/p>
+&lt;p>就像電影裡的情報員，不能讓敵人偷聽到情報傳遞過程。&lt;/p>
+&lt;hr>
+&lt;h2 id="加密的兩種方式">加密的兩種方式
+&lt;/h2>&lt;h3 id="對稱式加密symmetric-encryption">對稱式加密（Symmetric Encryption）
+&lt;/h3>&lt;p>情報員出發前，雙方先交換鑰匙：&lt;/p>
+&lt;ul>
+&lt;li>情報員把資料放進保險箱，用鑰匙鎖起來送出&lt;/li>
+&lt;li>你收到後用一樣的鑰匙打開&lt;/li>
+&lt;/ul>
+&lt;p>&lt;strong>優點&lt;/strong>：速度快，適合大量資料（影片、檔案）&lt;br>
+&lt;strong>缺點&lt;/strong>：鑰匙交換很危險（傳輸過程被偷就破功）&lt;/p>
+&lt;hr>
+&lt;h3 id="非對稱式加密asymmetric-encryption--公鑰與私鑰">非對稱式加密（Asymmetric Encryption – 公鑰與私鑰）
+&lt;/h3>&lt;p>這種方式更聰明：&lt;/p>
+&lt;ul>
+&lt;li>你有一把「鎖頭」🔓（公鑰）和一把「鑰匙」🔐（私鑰）&lt;/li>
+&lt;li>把鎖頭公開給情報員，情報員用它上鎖 → 資料安全寄回&lt;/li>
+&lt;li>只有你有的鑰匙能打開 → 不用交換私密資訊&lt;/li>
+&lt;/ul>
+&lt;p>&lt;strong>優點&lt;/strong>：鑰匙不用傳，安全&lt;br>
+&lt;strong>缺點&lt;/strong>：速度慢，不適合傳大量資料&lt;/p>
+&lt;hr>
+&lt;h2 id="devops-世界中的加密應用">DevOps 世界中的加密應用
+&lt;/h2>&lt;p>這兩種加密方式常搭配使用：&lt;/p>
+&lt;ol>
+&lt;li>用 &lt;strong>非對稱加密（RSA）&lt;/strong> 傳送一組 session key&lt;/li>
+&lt;li>接著雙方用這組 session key 透過 &lt;strong>對稱加密（AES）&lt;/strong> 傳輸大量資料&lt;/li>
+&lt;/ol>
+&lt;p>也就是做到：&lt;br>
+&lt;strong>安全交換鑰匙（RSA） + 高速傳輸資料（AES）&lt;/strong>&lt;/p>
+&lt;hr>
+&lt;p>今天就先寫到這，下一篇再來聊聊 Certificate、SSL/TLS、JWT 的原理與應用。&lt;/p></description></item><item><title>Why I Started This Blog</title><link>https://jasontsaicc.github.io/Jason-ops-notes/p/why-i-started-this-blog/</link><pubDate>Sun, 30 Mar 2025 15:17:00 +0800</pubDate><guid>https://jasontsaicc.github.io/Jason-ops-notes/p/why-i-started-this-blog/</guid><description>&lt;img src="https://jasontsaicc.github.io/Jason-ops-notes/p/why-i-started-this-blog/cover.jpg" alt="Featured image of post Why I Started This Blog" />&lt;h2 id="why-i-started-this-blog">Why I Started This Blog
+&lt;/h2>&lt;p>離開前一家公司後，經歷了一段不算順利的求職過程。
+面試讓我意識到自己的不足，不只是技術層面，更多的是不知道該從哪裡開始學起。&lt;/p>
+&lt;p>腦中總是有很多聲音——這裡不會、那裡也該補強，但又難以下手。&lt;/p>
+&lt;p>直到我看到了 Dan Koe 的影片。他的觀點讓我有了新的想法：與其一直想，不如先做點什麼。&lt;/p>
+&lt;p>那一刻，我決定開始寫作，當作一種自我對話，也是一種紀錄。&lt;/p>
+&lt;p>記錄我在 DevOps 這條路上的學習歷程，包括技術筆記、解決問題的經驗，還有我對英文表達的練習。&lt;/p>
+&lt;p>這個部落格，就是我行動的開始。&lt;/p>
+&lt;h2 id="我希望這個部落格可以幫我做到什麼">我希望這個部落格可以幫我做到什麼？
+&lt;/h2>&lt;p>我想透過這個空間，把複雜的想法一一釐清，讓學習更有方向，也更有紀錄感。&lt;/p>
+&lt;ul>
+&lt;li>梳理學習方向，紀錄學習過程&lt;/li>
+&lt;li>練習用英文表達技術內容&lt;/li>
+&lt;li>回顧問題解法與學到的技巧&lt;/li>
+&lt;/ul>
+&lt;h2 id="final-thoughts">Final Thoughts
+&lt;/h2>&lt;p>This blog is a space where I can pause, reflect, and realign my thoughts.
+為了讓自己在忙碌中，也能持續進步、慢慢前行。就從這裡開始。&lt;/p></description></item><item><title>Archives</title><link>https://jasontsaicc.github.io/Jason-ops-notes/archives/</link><pubDate>Sun, 06 Mar 2022 00:00:00 +0000</pubDate><guid>https://jasontsaicc.github.io/Jason-ops-notes/archives/</guid><description/></item><item><title>Links</title><link>https://jasontsaicc.github.io/Jason-ops-notes/links/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://jasontsaicc.github.io/Jason-ops-notes/links/</guid><description>&lt;p>To use this feature, add &lt;code>links&lt;/code> section to frontmatter.&lt;/p>
+&lt;p>This page&amp;rsquo;s frontmatter:&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;span class="lnt">5
+&lt;/span>&lt;span class="lnt">6
+&lt;/span>&lt;span class="lnt">7
+&lt;/span>&lt;span class="lnt">8
+&lt;/span>&lt;span class="lnt">9
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-yaml" data-lang="yaml">&lt;span class="line">&lt;span class="cl">&lt;span class="nt">links&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>- &lt;span class="nt">title&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">GitHub&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">description&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">GitHub is the world&amp;#39;s largest software development platform.&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">website&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">https://github.com&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">image&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>- &lt;span class="nt">title&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">TypeScript&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">description&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">TypeScript is a typed superset of JavaScript that compiles to plain JavaScript.&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">website&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">https://www.typescriptlang.org&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">image&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">ts-logo-128.jpg&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>&lt;code>image&lt;/code> field accepts both local and external images.&lt;/p></description></item><item><title>Search</title><link>https://jasontsaicc.github.io/Jason-ops-notes/search/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://jasontsaicc.github.io/Jason-ops-notes/search/</guid><description/></item></channel></rss>

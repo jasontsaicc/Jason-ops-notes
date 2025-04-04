@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>DevOps on Jason Ops Notes</title><link>https://jasontsaicc.github.io/Jason-ops-notes/tags/devops/</link><description>Recent content in DevOps on Jason Ops Notes</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Sun, 30 Mar 2025 15:17:00 +0800</lastBuildDate><atom:link href="https://jasontsaicc.github.io/Jason-ops-notes/tags/devops/index.xml" rel="self" type="application/rss+xml"/><item><title>從吃烤鴨聊到 TCP：重新回顧網路通訊與加密的基本原理</title><link>https://jasontsaicc.github.io/Jason-ops-notes/p/%E5%BE%9E%E5%90%83%E7%83%A4%E9%B4%A8%E8%81%8A%E5%88%B0-tcp%E9%87%8D%E6%96%B0%E5%9B%9E%E9%A1%A7%E7%B6%B2%E8%B7%AF%E9%80%9A%E8%A8%8A%E8%88%87%E5%8A%A0%E5%AF%86%E7%9A%84%E5%9F%BA%E6%9C%AC%E5%8E%9F%E7%90%86/</link><pubDate>Sun, 30 Mar 2025 00:00:00 +0000</pubDate><guid>https://jasontsaicc.github.io/Jason-ops-notes/p/%E5%BE%9E%E5%90%83%E7%83%A4%E9%B4%A8%E8%81%8A%E5%88%B0-tcp%E9%87%8D%E6%96%B0%E5%9B%9E%E9%A1%A7%E7%B6%B2%E8%B7%AF%E9%80%9A%E8%A8%8A%E8%88%87%E5%8A%A0%E5%AF%86%E7%9A%84%E5%9F%BA%E6%9C%AC%E5%8E%9F%E7%90%86/</guid><description>&lt;img src="https://jasontsaicc.github.io/Jason-ops-notes/p/%E5%BE%9E%E5%90%83%E7%83%A4%E9%B4%A8%E8%81%8A%E5%88%B0-tcp%E9%87%8D%E6%96%B0%E5%9B%9E%E9%A1%A7%E7%B6%B2%E8%B7%AF%E9%80%9A%E8%A8%8A%E8%88%87%E5%8A%A0%E5%AF%86%E7%9A%84%E5%9F%BA%E6%9C%AC%E5%8E%9F%E7%90%86/cover2.jpg" alt="Featured image of post 從吃烤鴨聊到 TCP：重新回顧網路通訊與加密的基本原理" />&lt;h2 id="第二篇文章獻給-andrew-和球魚啦">第二篇文章獻給 Andrew 和球魚啦!
+&lt;/h2>&lt;p>工程師的聚會除了在罵 DGR、佛地魔之外，這次竟然從吃烤鴨聊到 x86、Apple II、DOS、macOS、iOS 的歷史，一路延伸到網景、Sun Microsystems。&lt;/p>
+&lt;p>然後被 Andrew 一個靈魂拷問直接問到：&lt;/p>
+&lt;blockquote>
+&lt;p>OSI 架構是什麼？TCP/IP 怎麼運作？什麼是 3-way handshake、UDP、JWT？&lt;/p>&lt;/blockquote>
+&lt;p>這些都是面試必考題，不過不理解整個演進脈絡，每次都會變成「一看就會、一被問就廢」。&lt;/p>
+&lt;h2 id="就從tcp開始吧">就從TCP開始吧!!
+&lt;/h2>&lt;h2 id="故事起點兩台機器要怎麼溝通">故事起點：兩台機器要怎麼溝通？
+&lt;/h2>&lt;h3 id="udp像寄明信片">UDP：像寄明信片
+&lt;/h3>&lt;p>（想像一下哈利波特收到霍格華茲入學通知書）&lt;/p>
+&lt;p>完全沒有打招呼，資料就直接送出去，會導致：&lt;/p>
+&lt;ul>
+&lt;li>&lt;strong>不保證送達、順序也可能亂掉&lt;/strong>&lt;/li>
+&lt;li>適合：直播、語音、遊戲（掉一封信沒差，反正大量資料一直傳）&lt;/li>
+&lt;/ul>
+&lt;p>&lt;strong>優點&lt;/strong>：快、省資源&lt;br>
+&lt;strong>缺點&lt;/strong>：不可靠，資料可能遺失&lt;/p>
+&lt;hr>
+&lt;h3 id="tcp像打電話">TCP：像打電話
+&lt;/h3>&lt;p>TCP 建立連線前會先「打招呼」 → &lt;strong>三次握手（3-way handshake）&lt;/strong>&lt;/p>
+&lt;ol>
+&lt;li>Client：嘿，我要跟你講話（SYN）&lt;/li>
+&lt;li>Server：好啊，我準備好了（SYN+ACK）&lt;/li>
+&lt;li>Client：那我開始說囉（ACK）&lt;/li>
+&lt;/ol>
+&lt;p>就像你打給朋友，對方說「喂」，你回「嗨」→ 連線才算建立。&lt;/p>
+&lt;p>&lt;strong>優點&lt;/strong>：可靠、有順序、會補資料&lt;br>
+&lt;strong>缺點&lt;/strong>：多一步手續，速度比 UDP 慢&lt;/p>
+&lt;hr>
+&lt;h2 id="用工具觀察握手流程">用工具觀察握手流程
+&lt;/h2>&lt;p>可以用 &lt;code>tcpdump&lt;/code> 搭配 &lt;code>curl&lt;/code> 觀察完整流程：
+&lt;img src="https://jasontsaicc.github.io/Jason-ops-notes/p/%E5%BE%9E%E5%90%83%E7%83%A4%E9%B4%A8%E8%81%8A%E5%88%B0-tcp%E9%87%8D%E6%96%B0%E5%9B%9E%E9%A1%A7%E7%B6%B2%E8%B7%AF%E9%80%9A%E8%A8%8A%E8%88%87%E5%8A%A0%E5%AF%86%E7%9A%84%E5%9F%BA%E6%9C%AC%E5%8E%9F%E7%90%86/3-way_handshake.png"
+width="3082"
+height="878"
+srcset="https://jasontsaicc.github.io/Jason-ops-notes/p/%E5%BE%9E%E5%90%83%E7%83%A4%E9%B4%A8%E8%81%8A%E5%88%B0-tcp%E9%87%8D%E6%96%B0%E5%9B%9E%E9%A1%A7%E7%B6%B2%E8%B7%AF%E9%80%9A%E8%A8%8A%E8%88%87%E5%8A%A0%E5%AF%86%E7%9A%84%E5%9F%BA%E6%9C%AC%E5%8E%9F%E7%90%86/3-way_handshake_hu_d306a4140904a643.png 480w, https://jasontsaicc.github.io/Jason-ops-notes/p/%E5%BE%9E%E5%90%83%E7%83%A4%E9%B4%A8%E8%81%8A%E5%88%B0-tcp%E9%87%8D%E6%96%B0%E5%9B%9E%E9%A1%A7%E7%B6%B2%E8%B7%AF%E9%80%9A%E8%A8%8A%E8%88%87%E5%8A%A0%E5%AF%86%E7%9A%84%E5%9F%BA%E6%9C%AC%E5%8E%9F%E7%90%86/3-way_handshake_hu_ab8cab870ff3afd6.png 1024w"
+loading="lazy"
+alt="TCP 3-way handshake"
+class="gallery-image"
+data-flex-grow="351"
+data-flex-basis="842px"
+>&lt;/p>
+&lt;ol>
+&lt;li>Client → Server：&lt;strong>SYN&lt;/strong>
+&lt;ul>
+&lt;li>從本機（port 50963）發出 SYN 封包 → Google 443&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>Server → Client：&lt;strong>SYN-ACK&lt;/strong>
+&lt;ul>
+&lt;li>Google 回一個 SYN + ACK，acknowledge 你的序號&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>Client → Server：&lt;strong>ACK&lt;/strong>
+&lt;ul>
+&lt;li>回 ACK，握手完成，連線建立&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ol>
+&lt;hr>
+&lt;h3 id="封包標記簡單對照表">封包標記簡單對照表
+&lt;/h3>&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>Flag&lt;/th>
+&lt;th>意思&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>&lt;code>[S]&lt;/code>&lt;/td>
+&lt;td>SYN：我要建立連線&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;code>[S.]&lt;/code>&lt;/td>
+&lt;td>SYN+ACK：我也 OK，且回你&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;code>[.]&lt;/code>&lt;/td>
+&lt;td>ACK：確認完成握手&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;code>[P.]&lt;/code>&lt;/td>
+&lt;td>Push：開始傳資料&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;code>[F.]&lt;/code>&lt;/td>
+&lt;td>FIN：我要斷線結束連線&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;hr>
+&lt;h2 id="資料會被偷怎麼辦">資料會被偷怎麼辦？
+&lt;/h2>&lt;p>建立溝通管道後，下一步要擔心資料被竊聽，這時就需要 &lt;strong>加密&lt;/strong>。&lt;/p>
+&lt;p>就像電影裡的情報員，不能讓敵人偷聽到情報傳遞過程。&lt;/p>
+&lt;hr>
+&lt;h2 id="加密的兩種方式">加密的兩種方式
+&lt;/h2>&lt;h3 id="對稱式加密symmetric-encryption">對稱式加密（Symmetric Encryption）
+&lt;/h3>&lt;p>情報員出發前，雙方先交換鑰匙：&lt;/p>
+&lt;ul>
+&lt;li>情報員把資料放進保險箱，用鑰匙鎖起來送出&lt;/li>
+&lt;li>你收到後用一樣的鑰匙打開&lt;/li>
+&lt;/ul>
+&lt;p>&lt;strong>優點&lt;/strong>：速度快，適合大量資料（影片、檔案）&lt;br>
+&lt;strong>缺點&lt;/strong>：鑰匙交換很危險（傳輸過程被偷就破功）&lt;/p>
+&lt;hr>
+&lt;h3 id="非對稱式加密asymmetric-encryption--公鑰與私鑰">非對稱式加密（Asymmetric Encryption – 公鑰與私鑰）
+&lt;/h3>&lt;p>這種方式更聰明：&lt;/p>
+&lt;ul>
+&lt;li>你有一把「鎖頭」🔓（公鑰）和一把「鑰匙」🔐（私鑰）&lt;/li>
+&lt;li>把鎖頭公開給情報員，情報員用它上鎖 → 資料安全寄回&lt;/li>
+&lt;li>只有你有的鑰匙能打開 → 不用交換私密資訊&lt;/li>
+&lt;/ul>
+&lt;p>&lt;strong>優點&lt;/strong>：鑰匙不用傳，安全&lt;br>
+&lt;strong>缺點&lt;/strong>：速度慢，不適合傳大量資料&lt;/p>
+&lt;hr>
+&lt;h2 id="devops-世界中的加密應用">DevOps 世界中的加密應用
+&lt;/h2>&lt;p>這兩種加密方式常搭配使用：&lt;/p>
+&lt;ol>
+&lt;li>用 &lt;strong>非對稱加密（RSA）&lt;/strong> 傳送一組 session key&lt;/li>
+&lt;li>接著雙方用這組 session key 透過 &lt;strong>對稱加密（AES）&lt;/strong> 傳輸大量資料&lt;/li>
+&lt;/ol>
+&lt;p>也就是做到：&lt;br>
+&lt;strong>安全交換鑰匙（RSA） + 高速傳輸資料（AES）&lt;/strong>&lt;/p>
+&lt;hr>
+&lt;p>今天就先寫到這，下一篇再來聊聊 Certificate、SSL/TLS、JWT 的原理與應用。&lt;/p></description></item><item><title>Why I Started This Blog</title><link>https://jasontsaicc.github.io/Jason-ops-notes/p/why-i-started-this-blog/</link><pubDate>Sun, 30 Mar 2025 15:17:00 +0800</pubDate><guid>https://jasontsaicc.github.io/Jason-ops-notes/p/why-i-started-this-blog/</guid><description>&lt;img src="https://jasontsaicc.github.io/Jason-ops-notes/p/why-i-started-this-blog/cover.jpg" alt="Featured image of post Why I Started This Blog" />&lt;h2 id="why-i-started-this-blog">Why I Started This Blog
+&lt;/h2>&lt;p>離開前一家公司後，經歷了一段不算順利的求職過程。
+面試讓我意識到自己的不足，不只是技術層面，更多的是不知道該從哪裡開始學起。&lt;/p>
+&lt;p>腦中總是有很多聲音——這裡不會、那裡也該補強，但又難以下手。&lt;/p>
+&lt;p>直到我看到了 Dan Koe 的影片。他的觀點讓我有了新的想法：與其一直想，不如先做點什麼。&lt;/p>
+&lt;p>那一刻，我決定開始寫作，當作一種自我對話，也是一種紀錄。&lt;/p>
+&lt;p>記錄我在 DevOps 這條路上的學習歷程，包括技術筆記、解決問題的經驗，還有我對英文表達的練習。&lt;/p>
+&lt;p>這個部落格，就是我行動的開始。&lt;/p>
+&lt;h2 id="我希望這個部落格可以幫我做到什麼">我希望這個部落格可以幫我做到什麼？
+&lt;/h2>&lt;p>我想透過這個空間，把複雜的想法一一釐清，讓學習更有方向，也更有紀錄感。&lt;/p>
+&lt;ul>
+&lt;li>梳理學習方向，紀錄學習過程&lt;/li>
+&lt;li>練習用英文表達技術內容&lt;/li>
+&lt;li>回顧問題解法與學到的技巧&lt;/li>
+&lt;/ul>
+&lt;h2 id="final-thoughts">Final Thoughts
+&lt;/h2>&lt;p>This blog is a space where I can pause, reflect, and realign my thoughts.
+為了讓自己在忙碌中，也能持續進步、慢慢前行。就從這裡開始。&lt;/p></description></item></channel></rss>

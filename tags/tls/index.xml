@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Tls on Jason Ops Notes</title><link>https://jasontsaicc.github.io/Jason-ops-notes/tags/tls/</link><description>Recent content in Tls on Jason Ops Notes</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Thu, 03 Apr 2025 12:13:00 +0800</lastBuildDate><atom:link href="https://jasontsaicc.github.io/Jason-ops-notes/tags/tls/index.xml" rel="self" type="application/rss+xml"/><item><title>輸入網址之後發生的事?, DNS, TLS, 以及Certificate</title><link>https://jasontsaicc.github.io/Jason-ops-notes/p/%E8%BC%B8%E5%85%A5%E7%B6%B2%E5%9D%80%E4%B9%8B%E5%BE%8C%E7%99%BC%E7%94%9F%E7%9A%84%E4%BA%8B-dns-tls-%E4%BB%A5%E5%8F%8Acertificate/</link><pubDate>Thu, 03 Apr 2025 12:13:00 +0800</pubDate><guid>https://jasontsaicc.github.io/Jason-ops-notes/p/%E8%BC%B8%E5%85%A5%E7%B6%B2%E5%9D%80%E4%B9%8B%E5%BE%8C%E7%99%BC%E7%94%9F%E7%9A%84%E4%BA%8B-dns-tls-%E4%BB%A5%E5%8F%8Acertificate/</guid><description>&lt;img src="https://jasontsaicc.github.io/Jason-ops-notes/p/%E8%BC%B8%E5%85%A5%E7%B6%B2%E5%9D%80%E4%B9%8B%E5%BE%8C%E7%99%BC%E7%94%9F%E7%9A%84%E4%BA%8B-dns-tls-%E4%BB%A5%E5%8F%8Acertificate/blog_cover_03.jpeg" alt="Featured image of post 輸入網址之後發生的事?, DNS, TLS, 以及Certificate" />&lt;p>上一篇聊到了 TCP/UDP, 和非對稱加密/對稱加密的基本觀念, 再來繼續聊建立建立通訊之後之後的事!!
+這也是我在準備AWS Cloud Support Engineer面試題, 重新整理思路釐清整體概念的, 我們先從網路層面說起&lt;/p>
+&lt;hr>
+&lt;h2 id="輸入網址之後發生的事">輸入網址之後發生的事
+&lt;/h2>&lt;p>有沒有想過, 在使用Browser輸入&lt;code>google.com&lt;/code>按下 Enter, 之後發生了什麼事? 瀏覽器是怎麼將網頁顯示在你的螢幕上的!&lt;/p>
+&lt;p>按下Enter之後, 首先會先去DNS server(一般是UDP 53port, 但會先查看本機的cache) 查詢到google.com 的IP是多少.&lt;/p>
+&lt;p>這裡我們使用dig指令 來查看DNS server 的資訊(另外也可以使用nslookup來查詢, 但是現在新的工具建議使用dig比較清楚)&lt;/p>
+&lt;p>&lt;img src="https://jasontsaicc.github.io/Jason-ops-notes/p/%E8%BC%B8%E5%85%A5%E7%B6%B2%E5%9D%80%E4%B9%8B%E5%BE%8C%E7%99%BC%E7%94%9F%E7%9A%84%E4%BA%8B-dns-tls-%E4%BB%A5%E5%8F%8Acertificate/image-1.png"
+width="1564"
+height="818"
+srcset="https://jasontsaicc.github.io/Jason-ops-notes/p/%E8%BC%B8%E5%85%A5%E7%B6%B2%E5%9D%80%E4%B9%8B%E5%BE%8C%E7%99%BC%E7%94%9F%E7%9A%84%E4%BA%8B-dns-tls-%E4%BB%A5%E5%8F%8Acertificate/image-1_hu_7efda49876f79e7b.png 480w, https://jasontsaicc.github.io/Jason-ops-notes/p/%E8%BC%B8%E5%85%A5%E7%B6%B2%E5%9D%80%E4%B9%8B%E5%BE%8C%E7%99%BC%E7%94%9F%E7%9A%84%E4%BA%8B-dns-tls-%E4%BB%A5%E5%8F%8Acertificate/image-1_hu_7b005ea76a294917.png 1024w"
+loading="lazy"
+alt="linux dig指令"
+class="gallery-image"
+data-flex-grow="191"
+data-flex-basis="458px"
+>&lt;/p>
+&lt;ul>
+&lt;li>status: NOERROR 代表沒有錯誤&lt;/li>
+&lt;li>QUESTION SECTION 我們查詢的是google的A記錄&lt;/li>
+&lt;li>Google.com 對應的 IP是 142.250.196.206&lt;/li>
+&lt;/ul>
+&lt;h3 id="https-與-tls">HTTPS 與 TLS
+&lt;/h3>&lt;p>當瀏覽器拿到 IP 後, 這時候看到網址是「https://」開頭就其實背後就是使用SSL/TLS加密,會觸發 TLS Handshake, 這時候SSL/TLS做了2件事,&lt;/p>
+&lt;ol>
+&lt;li>使用加密可以確保傳輸的內容不會被竊聽&lt;/li>
+&lt;li>驗證伺服器身分（確認你連的是真的 Google，而不是假網站）&lt;/li>
+&lt;/ol>
+&lt;h3 id="tls-handshake的流程">TLS Handshake的流程
+&lt;/h3>&lt;p>當連到 https:// 開頭的網站時，背後其實跑的流程：&lt;/p>
+&lt;ol>
+&lt;li>Client 發送 Hello 告訴Server 我支援哪些加密演算法, TLS 版本?&lt;/li>
+&lt;li>Server 回傳 Hello 跟Certificate（網站名稱, 憑證, 公鑰）&lt;/li>
+&lt;li>瀏覽器會檢查憑證是否有效 (有沒有過期, 是不是有效的CA發的, 主機名)&lt;/li>
+&lt;li>如果沒問題, 瀏覽器用公鑰加密Session Key送給 Server&lt;/li>
+&lt;li>Server 用私鑰解開 Session Key，之後用這把金鑰雙方加密傳輸&lt;/li>
+&lt;/ol>
+&lt;p>為什麼安全呢?&lt;/p>
+&lt;ul>
+&lt;li>公鑰加密是「一把鎖 → 人人可鎖，只能你自己能解」的概念&lt;/li>
+&lt;li>就算中間有人攔截，也無法解出 Session Key&lt;/li>
+&lt;/ul>
+&lt;p>這也是上一篇說到的 混合加密（RSA + AES）。&lt;/p>
+&lt;blockquote>
+&lt;p>非對稱加密建立信任 + 對稱加密負責傳輸
+因為對稱加密速度快，適合長時間大量傳輸，而非對稱加密雖安全但運算慢，適合只用在「傳送 session key」。&lt;/p>&lt;/blockquote>
+&lt;p>這裡使用openssl來查看 TLS 連線過程：
+openssl s_client -connect google.com:443 -servername google.com -msg
+&lt;img src="https://jasontsaicc.github.io/Jason-ops-notes/p/%E8%BC%B8%E5%85%A5%E7%B6%B2%E5%9D%80%E4%B9%8B%E5%BE%8C%E7%99%BC%E7%94%9F%E7%9A%84%E4%BA%8B-dns-tls-%E4%BB%A5%E5%8F%8Acertificate/image-3.png"
+width="1450"
+height="1152"
+srcset="https://jasontsaicc.github.io/Jason-ops-notes/p/%E8%BC%B8%E5%85%A5%E7%B6%B2%E5%9D%80%E4%B9%8B%E5%BE%8C%E7%99%BC%E7%94%9F%E7%9A%84%E4%BA%8B-dns-tls-%E4%BB%A5%E5%8F%8Acertificate/image-3_hu_3b295f44ed21ab64.png 480w, https://jasontsaicc.github.io/Jason-ops-notes/p/%E8%BC%B8%E5%85%A5%E7%B6%B2%E5%9D%80%E4%B9%8B%E5%BE%8C%E7%99%BC%E7%94%9F%E7%9A%84%E4%BA%8B-dns-tls-%E4%BB%A5%E5%8F%8Acertificate/image-3_hu_598c4b4999612569.png 1024w"
+loading="lazy"
+alt="TLS 連線過程-1"
+class="gallery-image"
+data-flex-grow="125"
+data-flex-basis="302px"
+>
+&lt;img src="https://jasontsaicc.github.io/Jason-ops-notes/p/%E8%BC%B8%E5%85%A5%E7%B6%B2%E5%9D%80%E4%B9%8B%E5%BE%8C%E7%99%BC%E7%94%9F%E7%9A%84%E4%BA%8B-dns-tls-%E4%BB%A5%E5%8F%8Acertificate/image-4.png"
+width="1538"
+height="1768"
+srcset="https://jasontsaicc.github.io/Jason-ops-notes/p/%E8%BC%B8%E5%85%A5%E7%B6%B2%E5%9D%80%E4%B9%8B%E5%BE%8C%E7%99%BC%E7%94%9F%E7%9A%84%E4%BA%8B-dns-tls-%E4%BB%A5%E5%8F%8Acertificate/image-4_hu_5488d8842d8b912c.png 480w, https://jasontsaicc.github.io/Jason-ops-notes/p/%E8%BC%B8%E5%85%A5%E7%B6%B2%E5%9D%80%E4%B9%8B%E5%BE%8C%E7%99%BC%E7%94%9F%E7%9A%84%E4%BA%8B-dns-tls-%E4%BB%A5%E5%8F%8Acertificate/image-4_hu_921c0932f5cdd238.png 1024w"
+loading="lazy"
+alt="TLS 連線過程-2"
+class="gallery-image"
+data-flex-grow="86"
+data-flex-basis="208px"
+>&lt;/p>
+&lt;ul>
+&lt;li>Client Hello → 支援哪些加密演算法、TLS 版本&lt;/li>
+&lt;li>Server Hello → 協議、Cipher、憑證內容&lt;/li>
+&lt;/ul>
+&lt;p>這裡有一個重點是怎麼確定你連到的真的Google呢?怎麼去驗證呢?&lt;/p>
+&lt;h2 id="certificate的運作">Certificate的運作
+&lt;/h2>&lt;p>Certificate用來當作網頁的身份證, 上面寫了&lt;/p>
+&lt;ul>
+&lt;li>網站名稱(google.com)&lt;/li>
+&lt;li>和上一篇說到的公鑰（用來給瀏覽器加密 Session Key, 單向的加密)&lt;/li>
+&lt;li>以及是誰背書的簽發者, (CA, Certificate Authority)? 這個清單上存在我們的瀏覽器中!&lt;/li>
+&lt;li>有效期限&lt;/li>
+&lt;li>簽章 CA 使用自己的key來加簽, 確定憑證沒有被篡改&lt;/li>
+&lt;/ul>
+&lt;p>有點像要進去公司大樓, 我拿員工證(Certificate)給管理員(Browser)看, 看到誰google發給我的員工證,這樣我就可以進去了（建立 HTTPS連線）.&lt;/p>
+&lt;p>瀏覽器內建會信任這些 CA 發的憑證, 所以我們的系統跟瀏覽器喔都有預設信任的CA清單, 都預設在系統當中了, 這幾個CA裡面的清單會自動更新來收錄新網站&lt;/p>
+&lt;ul>
+&lt;li>所以瀏覽器信 CA → 信這張憑證 → 信這個網站。&lt;/li>
+&lt;li>只要是可信 CA 簽出來的憑證，瀏覽器就會信任&lt;/li>
+&lt;li>CA 是憑證頒發單位&lt;/li>
+&lt;/ul>
+&lt;p>可以在瀏覽器中查看 Google 的憑證內容, 有效期限, 還有公鑰
+&lt;img src="https://jasontsaicc.github.io/Jason-ops-notes/p/%E8%BC%B8%E5%85%A5%E7%B6%B2%E5%9D%80%E4%B9%8B%E5%BE%8C%E7%99%BC%E7%94%9F%E7%9A%84%E4%BA%8B-dns-tls-%E4%BB%A5%E5%8F%8Acertificate/image-5.png"
+width="2172"
+height="1644"
+srcset="https://jasontsaicc.github.io/Jason-ops-notes/p/%E8%BC%B8%E5%85%A5%E7%B6%B2%E5%9D%80%E4%B9%8B%E5%BE%8C%E7%99%BC%E7%94%9F%E7%9A%84%E4%BA%8B-dns-tls-%E4%BB%A5%E5%8F%8Acertificate/image-5_hu_16af0a25c29631f8.png 480w, https://jasontsaicc.github.io/Jason-ops-notes/p/%E8%BC%B8%E5%85%A5%E7%B6%B2%E5%9D%80%E4%B9%8B%E5%BE%8C%E7%99%BC%E7%94%9F%E7%9A%84%E4%BA%8B-dns-tls-%E4%BB%A5%E5%8F%8Acertificate/image-5_hu_8000511ff5ebd150.png 1024w"
+loading="lazy"
+alt="alt text"
+class="gallery-image"
+data-flex-grow="132"
+data-flex-basis="317px"
+>&lt;/p>
+&lt;p>這裡我來說一下憑證的簽發流程(self Signed常常會使用到, 以後在出一篇詳細說明)&lt;/p>
+&lt;p>一般的流程是這樣, 在server端 → 建立 CSR（憑證簽發請求） → 傳送給 CA → CA 用私鑰簽名 → 回傳憑證&lt;/p>
+&lt;p>用我最近找工作來舉例的話就是:我在104寫履歷（CSR），給我的推薦人（CA），幫我背書（簽名）說「Jason沒問題!」，我就可以拿著這張履歷（憑證）找工作（給瀏覽器驗證）。&lt;/p>
+&lt;h2 id="總結">總結
+&lt;/h2>&lt;p>寫著寫著發現有太多要延伸出去的, 不知不覺寫了很多, 原本想要講 JWT 和自簽憑證，但還沒來得及, 下篇再繼續分享！&lt;/p></description></item></channel></rss>
